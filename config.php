@@ -1,5 +1,0 @@
-<?php
-
-// settings
-define("API_KEY", "4Z93X2LP-T9G4OYYE-P0UN6P5P-3EJFBSO6");
-define("API_SECRET", "e7f7d6313ffd51cb35bcdcf2c54ae942e51014bfa245938c38f57c051c1b45dcc29e4b0eca4007a9257296ddb5162b4367f1dacfec483162db5f849ca348ca1a");
