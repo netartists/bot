@@ -1,6 +1,6 @@
 <?php
 
-class mailClass {
+class Mail {
 
     /**
      * Sends mail

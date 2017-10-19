@@ -6,6 +6,7 @@ include("config.php");
 // include classes
 include ("classes/Trading.php");
 include ("classes/Mail.php");
+include ("classes/Trades.php");
 
 echo "<h2>It works!</h2>";
 
@@ -15,7 +16,7 @@ echo "<h2>It works!</h2>";
 $currencyPairs = array("");
 
 // initiate
-$trade = new tradingClass();
+$trade = new Trading();
 
 // check every single currency pair
 foreach ($currencyPairs as $currencyPair) {
@@ -42,7 +43,7 @@ foreach ($currencyPairs as $currencyPair) {
 
         $betreff    = $currencyPair. ", UpTrend durchbrochen";
 
-        $sendMail = new mailClass();
+        $sendMail = new Mail();
         $sendMail->sendMail($mailtext, $betreff);
     }
 
@@ -67,7 +68,26 @@ foreach ($currencyPairs as $currencyPair) {
 
         $betreff    = $currencyPair. ", DownTrend durchbrochen";
 
-        $sendMail = new mailClass();
+        $sendMail = new Mail();
         $sendMail->sendMail($mailtext, $betreff);
     }
 }
+
+$storeTrade = new Trades();
+$storeTrade->name = 'test';
+$storeTrade->storeTrade();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

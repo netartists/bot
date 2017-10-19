@@ -9,7 +9,7 @@ include("lib/pChart2.1.4/class/pDraw.class.php");
 include("lib/pChart2.1.4/class/pImage.class.php");
 include("lib/pChart2.1.4/class/pStock.class.php");
 
-class tradingClass {
+class Trading {
 
     private $numberOfPeriods = 7;
 
