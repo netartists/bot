@@ -9,9 +9,64 @@ include("lib/pChart2.1.4/class/pDraw.class.php");
 include("lib/pChart2.1.4/class/pImage.class.php");
 include("lib/pChart2.1.4/class/pStock.class.php");
 
-class Trading {
+class CheckTrend {
 
     private $numberOfPeriods = 7;
+
+    public $name = '';
+    public $provider = 'Poloniex';
+    public $buyDate = '';
+    public $sellDate = '';
+    public $buyPrice = '';
+    public $sellPrice = '';
+    public $stopPrice = '';
+    public $tradingReason = '';
+    public $trailingStopDistance = '10';
+    public $tradingSignal = false;
+
+    /**
+     * Checks currency pairs for trend signals
+     *
+     * $currencyPairs array Array of currency pairs
+     */
+    public function checkTrendSignals($currencyPair) {
+
+        // general properties
+        $this->name = $currencyPair;
+
+        // check for broken uptrend
+        if ($this->checkBrokenUptrend($currencyPair)) {
+
+
+            $this->tradingReason = 'UpTrend durchbrochen';
+            $this->tradingSignal = true;
+
+            /*
+            // send mail
+            $imageName = $this->drawChart($this->getChartData($currencyPair), $currencyPair, time());
+            $mailtext = 'UpTrend durchbrochen';
+            $betreff    = $currencyPair. ", UpTrend durchbrochen";
+            $sendMail = new Mail();
+            $sendMail->sendMail($mailtext, $betreff, $currencyPair, $imageName);
+            */
+        }
+
+        // check for broken downtrend
+        if ($this->checkBrokenDowntrend($currencyPair)) {
+
+            $this->tradingReason = 'DownTrend durchbrochen';
+            $this->tradingSignal = true;
+
+            /*
+            // send mail
+            $imageName = $this->drawChart($this->getChartData($currencyPair), $currencyPair, time());
+            $mailtext = 'DownTrend durchbrochen';
+            $betreff    = $currencyPair. ", DownTrend durchbrochen";
+            $sendMail = new Mail();
+            $sendMail->sendMail($mailtext, $betreff, $currencyPair, $imageName);
+            */
+        }
+    }
 
     /**
      * Checks whether the upward trend has been broken down trough
@@ -20,7 +75,7 @@ class Trading {
      *
      * 5 minutes periods
      */
-    function checkBrokenUptrend($currencyPair) {
+    public function checkBrokenUptrend($currencyPair) {
 
         $currentTimestamp = time();
         $amountOfFollowingHigherPeriods = 5;
@@ -62,14 +117,15 @@ class Trading {
                         if ($amountOfLowerPeriodsInARow >= $amountOfFollowingLowerPeriods) {
 
                             // broken uptrend detected
-                            return 1;
+                            $this->buyPrice = $chartData["candleStick"][0]["close"];
+                            return true;
                         }
                     }
                 }
             }
         }
 
-        return 0;
+        return false;
     }
 
     /**
@@ -79,7 +135,7 @@ class Trading {
      *
      * 5 minutes periods
      */
-    function checkBrokenDowntrend($currencyPair) {
+    public function checkBrokenDowntrend($currencyPair) {
 
         $currentTimestamp = time();
         $amountOfFollowingLowerPeriods = 5;
@@ -121,20 +177,21 @@ class Trading {
                         if ($amountOfHigherPeriodsInARow >= $amountOfFollowingHigherPeriods) {
 
                             // broken downtrend detected
-                            return 1;
+                            $this->buyPrice = $chartData["candleStick"][0]["close"];
+                            return true;
                         }
                     }
                 }
             }
         }
 
-        return 0;
+        return false;
     }
 
     /**
      * Gets chart data
      */
-    function getChartData($currencyPair) {
+    private function getChartData($currencyPair) {
 
         $currentTimestamp = time();
         $start = $currentTimestamp - (0.5 * 24 * 3600);
@@ -150,7 +207,7 @@ class Trading {
     /**
      * Draws chart to file
      */
-    function drawChart($chartData, $currencyPair, $timestamp) {
+    private function drawChart($chartData, $currencyPair, $timestamp) {
 
         /* Create and populate the pData object */
 

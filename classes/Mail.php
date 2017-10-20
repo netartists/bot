@@ -5,7 +5,7 @@ class Mail {
     /**
      * Sends mail
      */
-    function sendMail($mailtext, $betreff) {
+    function sendMail($mailtext, $betreff, $currencyPair, $imageName) {
 
         $empfaenger = "rene.sonntag@gmx.de";
         $absender   = "info@netartists.de";
@@ -19,8 +19,21 @@ class Mail {
         // $header .= "Cc: $cc\r\n";  // falls an CC gesendet werden soll
         $header .= "X-Mailer: PHP ". phpversion();
 
-        mail( $empfaenger, $betreff, $mailtext, $header );
 
-        return 0;
+        $mailContent = '<html xmlns="http://www.w3.org/1999/xhtml">
+                        <head>
+                            <title>' .$currencyPair. ', ' .$mailtext. '</title>
+                        </head>
+                         
+                        <body>
+                         
+                            <h1>' .$currencyPair. ', ' .$mailtext. '</h1>
+                             
+                            <img src="https://netartists.de/downloads/tmp/'.$imageName.'" alt="Chart" width="100%" style="display: block;">
+                         
+                        </body>
+                      </html>';
+
+        mail( $empfaenger, $betreff, $mailContent, $header );
     }
 }
