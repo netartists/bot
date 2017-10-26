@@ -9,9 +9,10 @@ include("lib/pChart2.1.4/class/pDraw.class.php");
 include("lib/pChart2.1.4/class/pImage.class.php");
 include("lib/pChart2.1.4/class/pStock.class.php");
 
-class CheckTrend {
+class Analyse {
 
     private $numberOfPeriods = 7;
+    private $numberOfPeriodsTrend = 20;
 
     public $name = '';
     public $provider = 'Poloniex';
@@ -78,51 +79,49 @@ class CheckTrend {
     public function checkBrokenUptrend($currencyPair) {
 
         $currentTimestamp = time();
-        $amountOfFollowingHigherPeriods = 5;
-        $amountOfFollowingLowerPeriods = 2;
-        $amountOfHigherPeriodsInARow = 0;
-        $amountOfLowerPeriodsInARow = 0;
-        $highTrend = false;
 
-        for ($i=$this->numberOfPeriods; $i>=1; $i--) {
+        $start = $currentTimestamp - ($this->numberOfPeriodsTrend * 300);
+        $end = $currentTimestamp;
 
-            $start = $currentTimestamp - ($i * 300);
-            $end = $currentTimestamp - (($i-1) * 300);
+        // initialize API
+        $poloniexApi = new poloniex(API_KEY, API_SECRET);
+        $chartData = $poloniexApi->get_chart_data($currencyPair, $start, $end, 300);
 
-            // better sleep, because API allows not so much requests (max. 6 per second)
-            time_nanosleep(0, 200000000);
+        if (array_key_exists("candleStick", $chartData)) {
 
-            // initialize API
-            $poloniexApi = new poloniex(API_KEY, API_SECRET);
-            $chartData = $poloniexApi->get_chart_data($currencyPair, $start, $end, 300);
-
-            if (array_key_exists("candleStick", $chartData)) {
-
-                if (($chartData["candleStick"][0]["close"] - $chartData["candleStick"][0]["open"]) > 0) {
-                    // "higher";
-                    $amountOfHigherPeriodsInARow++;
-                    $amountOfLowerPeriodsInARow = 0;
-
-                    if ($amountOfHigherPeriodsInARow >= $amountOfFollowingHigherPeriods) {
-                        $highTrend = true;
-                    }
-                } else {
-                    // "lower";
-                    $amountOfLowerPeriodsInARow++;
-
-                    if ($highTrend == false) {
-                        $amountOfHigherPeriodsInARow = 0;
-                    } else {
-
-                        if ($amountOfLowerPeriodsInARow >= $amountOfFollowingLowerPeriods) {
-
-                            // broken uptrend detected
-                            $this->buyPrice = $chartData["candleStick"][0]["close"];
-                            return true;
-                        }
-                    }
-                }
+            // get highest closing values in $chartData part one
+            $sortingPartOneArray = array();
+            for ($i=0; $i<$this->numberOfPeriodsTrend/2; $i++) {
+                array_push($sortingPartOneArray, $chartData["candleStick"][$i]["close"]);
             }
+
+            // get highest closing values in $chartData part two
+            $sortingPartTwoArray = array();
+            for ($i=$this->numberOfPeriodsTrend/2; $i<$this->numberOfPeriodsTrend; $i++) {
+                array_push($sortingPartTwoArray, $chartData["candleStick"][$i]["close"]);
+            }
+
+            print "<pre>";
+            print_r($sortingPartOneArray);
+            print "</pre>";
+            echo max($sortingPartOneArray);
+
+            print "<pre>";
+            print_r($sortingPartTwoArray);
+            print "</pre>";
+            echo max($sortingPartTwoArray);
+
+
+            print "<hr><hr><pre>";
+            print_r($chartData);
+            print "</pre>";
+            exit;
+
+            $highestValuePartOne = max($sortingPartOneArray);
+            $highestValuePartTwo = max($sortingPartTwoArray);
+
+
+
         }
 
         return false;
@@ -156,7 +155,9 @@ class CheckTrend {
             $poloniexApi = new poloniex(API_KEY, API_SECRET);
             $chartData = $poloniexApi->get_chart_data($currencyPair, $start, $end, 300);
 
-            if (array_key_exists("candleStick", $chartData)) {
+            if (array_key_exists("candleStick", $chartData)
+                && $chartData["candleStick"][0]["close"] > 0
+                && $chartData["candleStick"][0]["open"] > 0) {
 
                 if (($chartData["candleStick"][0]["close"] - $chartData["candleStick"][0]["open"]) < 0) {
                     // "lower";
@@ -177,6 +178,174 @@ class CheckTrend {
                         if ($amountOfHigherPeriodsInARow >= $amountOfFollowingHigherPeriods) {
 
                             // broken downtrend detected
+                            $this->buyPrice = $chartData["candleStick"][0]["close"];
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks currency pairs for row signals
+     *
+     * $currencyPairs array Array of currency pairs
+     */
+    public function checkRowSignals($currencyPair) {
+
+        // general properties
+        $this->name = $currencyPair;
+
+        // check for broken uptrend
+        if ($this->checkBrokenUprow($currencyPair)) {
+
+
+            $this->tradingReason = 'UpRow durchbrochen';
+            $this->tradingSignal = true;
+
+            /*
+            // send mail
+            $imageName = $this->drawChart($this->getChartData($currencyPair), $currencyPair, time());
+            $mailtext = 'UpRow durchbrochen';
+            $betreff    = $currencyPair. ", UpRow durchbrochen";
+            $sendMail = new Mail();
+            $sendMail->sendMail($mailtext, $betreff, $currencyPair, $imageName);
+            */
+        }
+
+        // check for broken downrow
+        if ($this->checkBrokenDownrow($currencyPair)) {
+
+            $this->tradingReason = 'DownRow durchbrochen';
+            $this->tradingSignal = true;
+
+            /*
+            // send mail
+            $imageName = $this->drawChart($this->getChartData($currencyPair), $currencyPair, time());
+            $mailtext = 'DownRow durchbrochen';
+            $betreff    = $currencyPair. ", DownRow durchbrochen";
+            $sendMail = new Mail();
+            $sendMail->sendMail($mailtext, $betreff, $currencyPair, $imageName);
+            */
+        }
+    }
+
+    /**
+     * Checks whether the upward row has been broken down trough
+     *
+     * x higher periods followed by y lower periods
+     *
+     * 5 minutes periods
+     */
+    public function checkBrokenUprow($currencyPair) {
+
+        $currentTimestamp = time();
+        $amountOfFollowingHigherPeriods = 5;
+        $amountOfFollowingLowerPeriods = 2;
+        $amountOfHigherPeriodsInARow = 0;
+        $amountOfLowerPeriodsInARow = 0;
+        $highTrend = false;
+
+        for ($i=$this->numberOfPeriods; $i>=1; $i--) {
+
+            $start = $currentTimestamp - ($i * 300);
+            $end = $currentTimestamp - (($i-1) * 300);
+
+            // better sleep, because API allows not so much requests (max. 6 per second)
+            time_nanosleep(0, 200000000);
+
+            // initialize API
+            $poloniexApi = new poloniex(API_KEY, API_SECRET);
+            $chartData = $poloniexApi->get_chart_data($currencyPair, $start, $end, 300);
+
+            if (array_key_exists("candleStick", $chartData)
+                && $chartData["candleStick"][0]["close"] > 0
+                && $chartData["candleStick"][0]["open"] > 0) {
+
+                if (($chartData["candleStick"][0]["close"] - $chartData["candleStick"][0]["open"]) > 0) {
+                    // "higher";
+                    $amountOfHigherPeriodsInARow++;
+                    $amountOfLowerPeriodsInARow = 0;
+
+                    if ($amountOfHigherPeriodsInARow >= $amountOfFollowingHigherPeriods) {
+                        $highTrend = true;
+                    }
+                } else {
+                    // "lower";
+                    $amountOfLowerPeriodsInARow++;
+
+                    if ($highTrend == false) {
+                        $amountOfHigherPeriodsInARow = 0;
+                    } else {
+
+                        if ($amountOfLowerPeriodsInARow >= $amountOfFollowingLowerPeriods) {
+
+                            // broken uprow detected
+                            $this->buyPrice = $chartData["candleStick"][0]["close"];
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks whether the downward row has been broken up trough
+     *
+     * x lower periods followed by y higher periods
+     *
+     * 5 minutes periods
+     */
+    public function checkBrokenDownrow($currencyPair) {
+
+        $currentTimestamp = time();
+        $amountOfFollowingLowerPeriods = 5;
+        $amountOfFollowingHigherPeriods = 2;
+        $amountOfLowerPeriodsInARow = 0;
+        $amountOfHigherPeriodsInARow = 0;
+        $lowTrend = false;
+
+        for ($i=$this->numberOfPeriods; $i>=1; $i--) {
+
+            $start = $currentTimestamp - ($i * 300);
+            $end = $currentTimestamp - (($i-1) * 300);
+
+            // better sleep, because API allows not so much requests (max. 6 per second)
+            time_nanosleep(0, 200000000);
+
+            // initialize API
+            $poloniexApi = new poloniex(API_KEY, API_SECRET);
+            $chartData = $poloniexApi->get_chart_data($currencyPair, $start, $end, 300);
+
+            if (array_key_exists("candleStick", $chartData)
+                && $chartData["candleStick"][0]["close"] > 0
+                && $chartData["candleStick"][0]["open"] > 0) {
+
+                if (($chartData["candleStick"][0]["close"] - $chartData["candleStick"][0]["open"]) < 0) {
+                    // "lower";
+                    $amountOfLowerPeriodsInARow++;
+                    $amountOfHigherPeriodsInARow = 0;
+
+                    if ($amountOfLowerPeriodsInARow >= $amountOfFollowingLowerPeriods) {
+                        $lowTrend = true;
+                    }
+                } else {
+                    // "higher";
+                    $amountOfHigherPeriodsInARow++;
+
+                    if ($lowTrend == false) {
+                        $amountOfLowerPeriodsInARow = 0;
+                    } else {
+
+                        if ($amountOfHigherPeriodsInARow >= $amountOfFollowingHigherPeriods) {
+
+                            // broken downrow detected
                             $this->buyPrice = $chartData["candleStick"][0]["close"];
                             return true;
                         }

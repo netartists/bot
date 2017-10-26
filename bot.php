@@ -4,7 +4,7 @@
 include("config.php");
 
 // include classes
-include ("classes/CheckTrend.php");
+include ("classes/Analyse.php");
 include ("classes/Mail.php");
 include ("classes/Trades.php");
 
@@ -13,15 +13,16 @@ include ("classes/Trades.php");
 echo "<h1>TrendChecker</h1>";
 
 // define currency pairs
-$currencyPairs = array("BTC_XMR", "BTC_GAME", "BTC_ETC", "BTC_ETH", "BTC_LTC");
-// $currencyPairs = array("BTC_XMR");
+// $currencyPairs = array("BTC_XMR", "BTC_GAME", "BTC_ETC", "BTC_ETH", "BTC_LTC");
+$currencyPairs = array("BTC_XMR");
 // $currencyPairs = array("");
 
 // check every single currency pair for trading signals
 foreach ($currencyPairs as $currencyPair) {
 
-    $trade = new CheckTrend();
-    $trade->checkTrendSignals($currencyPair);
+    $trade = new Analyse();
+    $trade->checkBrokenUptrend($currencyPair);
+    $trade->checkRowSignals($currencyPair);
 
     if ($trade->tradingSignal == true) {
 
