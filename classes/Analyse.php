@@ -110,8 +110,8 @@ class Analyse
             $highestValuePartOne = 0;
             $highestDatePartOne = '';
             for ($i = 0; $i < $this->numberOfPeriodsTrend / 2; $i++) {
-                if ($chartData['candleStick'][$i]['close'] > $highestValuePartOne) {
-                    $highestValuePartOne = $chartData['candleStick'][$i]['close'];
+                if ($chartData['candleStick'][$i]['high'] > $highestValuePartOne) {
+                    $highestValuePartOne = $chartData['candleStick'][$i]['high'];
                     $highestDatePartOne = $chartData['candleStick'][$i]['date'];
                 }
             }
@@ -120,8 +120,8 @@ class Analyse
             $highestValuePartTwo = 0;
             $highestDatePartTwo = '';
             for ($i = $this->numberOfPeriodsTrend / 2; $i < $this->numberOfPeriodsTrend - 1; $i++) {
-                if ($chartData['candleStick'][$i]['close'] > $highestValuePartTwo) {
-                    $highestValuePartTwo = $chartData['candleStick'][$i]['close'];
+                if ($chartData['candleStick'][$i]['high'] > $highestValuePartTwo) {
+                    $highestValuePartTwo = $chartData['candleStick'][$i]['high'];
                     $highestDatePartTwo = $chartData['candleStick'][$i]['date'];
                 }
             }
@@ -132,15 +132,16 @@ class Analyse
             // check if last candle brokes the trend
             // y = m * x + b
             // y is date
-            // x is close
+            // x is high
             // calculate tend x
             // x = (y - b) / m
 
             $lastCandle = end($chartData['candleStick']);
 
-            $calculatedTrendClose = ($lastCandle['date'] - $equationParameters['b']) / $equationParameters['m'];
+            $calculatedTrendValue = ($lastCandle['date'] - $equationParameters['b']) / $equationParameters['m'];
 
-            if ($lastCandle['close'] >= $calculatedTrendClose) {
+            if ($lastCandle['high'] >= $calculatedTrendValue) {
+                $this->buyPrice = $lastCandle['close'];
                 return true;
             }
         }
@@ -176,21 +177,21 @@ class Analyse
         if (array_key_exists('candleStick', $chartData)) {
 
             // get lowest closing value in $chartData part one
-            $lowestValuePartOne = 0;
+            $lowestValuePartOne = 999999999999;
             $lowestDatePartOne = '';
             for ($i = 0; $i < $this->numberOfPeriodsTrend / 2; $i++) {
-                if ($chartData['candleStick'][$i]['close'] > $lowestValuePartOne) {
-                    $lowestValuePartOne = $chartData['candleStick'][$i]['close'];
+                if ($chartData['candleStick'][$i]['low'] < $lowestValuePartOne) {
+                    $lowestValuePartOne = $chartData['candleStick'][$i]['low'];
                     $lowestDatePartOne = $chartData['candleStick'][$i]['date'];
                 }
             }
 
             // get lowest closing value in $chartData part two
-            $lowestValuePartTwo = 0;
+            $lowestValuePartTwo = 999999999999;
             $lowestDatePartTwo = '';
             for ($i = $this->numberOfPeriodsTrend / 2; $i < $this->numberOfPeriodsTrend - 1; $i++) {
-                if ($chartData['candleStick'][$i]['close'] > $lowestValuePartTwo) {
-                    $lowestValuePartTwo = $chartData['candleStick'][$i]['close'];
+                if ($chartData['candleStick'][$i]['low'] < $lowestValuePartTwo) {
+                    $lowestValuePartTwo = $chartData['candleStick'][$i]['low'];
                     $lowestDatePartTwo = $chartData['candleStick'][$i]['date'];
                 }
             }
@@ -201,15 +202,16 @@ class Analyse
             // check if last candle brokes the trend
             // y = m * x + b
             // y is date
-            // x is close
+            // x is low
             // calculate tend x
             // x = (y - b) / m
 
             $lastCandle = end($chartData['candleStick']);
 
-            $calculatedTrendClose = ($lastCandle['date'] - $equationParameters['b']) / $equationParameters['m'];
+            $calculatedTrendValue = ($lastCandle['date'] - $equationParameters['b']) / $equationParameters['m'];
 
-            if ($lastCandle['close'] <= $calculatedTrendClose) {
+            if ($lastCandle['low'] <= $calculatedTrendValue) {
+                $this->buyPrice = $lastCandle['low'];
                 return true;
             }
         }

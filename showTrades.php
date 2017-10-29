@@ -20,7 +20,7 @@ if ($mysqli->connect_errno) {
     die('Verbindung fehlgeschlagen: ' . $mysqli->connect_error);
 }
 
-$sql = "SELECT * FROM depot";
+$sql = "SELECT * FROM depot ORDER BY id DESC";
 $result = $mysqli->query($sql);
 
 echo "<table border=1 cellspacing=0 cellpadding=10>";
