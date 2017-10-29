@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * Simple function caller
+ *
+ * @author     René Sonntag, info@netartists.de
+ * @version    1.0
+ */
+
 // include config
 include("config.php");
 
@@ -15,7 +22,6 @@ echo "<h1>TrendChecker</h1>";
 // define currency pairs
 // $currencyPairs = array("BTC_XMR", "BTC_GAME", "BTC_ETC", "BTC_ETH", "BTC_LTC");
 $currencyPairs = array("BTC_XMR");
-// $currencyPairs = array("");
 
 // check every single currency pair for trading signals
 foreach ($currencyPairs as $currencyPair) {

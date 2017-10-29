@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * Simple database output
+ *
+ * @author     René Sonntag, info@netartists.de
+ * @version    1.0
+ */
+
 // include config
 include("config.php");
 

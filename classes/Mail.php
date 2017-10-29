@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * Mail class
+ *
+ * Class provides functions to send e-mails
+ *
+ * @author     René Sonntag, info@netartists.de
+ * @version    1.0
+ */
+
 class Mail {
 
     /**

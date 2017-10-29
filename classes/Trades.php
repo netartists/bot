@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * Trades class
+ *
+ * Class provides functions to handle trades
+ *
+ * @author     René Sonntag, info@netartists.de
+ * @version    1.0
+ */
+
 class Trades {
 
     protected $mysqli;

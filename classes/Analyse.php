@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * Analyse class
+ *
+ * Class provides functions to analyse charts
+ *
+ * @author     René Sonntag, info@netartists.de
+ * @version    1.0
+ */
+
 // include api wrapper
 include("api/wrapper.php");
 
