@@ -27,7 +27,8 @@ $currencyPairs = array("BTC_XMR", "BTC_GAME", "BTC_ETC", "BTC_ETH", "BTC_LTC");
 foreach ($currencyPairs as $currencyPair) {
 
     $trade = new Analyse();
-    $trade->checkTrendSignals($currencyPair);
+    $trade->name = $currencyPair;
+    $trade->checkTrendSignals();
 
     if ($trade->tradingSignal == true) {
 

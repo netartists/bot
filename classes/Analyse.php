@@ -44,21 +44,16 @@ class Analyse
     /**
      * Checks currency pairs for trend signals
      *
-     * $currencyPairs array Array of currency pairs
      */
-    public function checkTrendSignals($currencyPair)
+    public function checkTrendSignals()
     {
-
-        // general properties
-        $this->name = $currencyPair;
-
         // get chart data
         $currentTimestamp = time();
         $start = $currentTimestamp - ($this->numberOfPeriodsTrend * $this->periodSeconds);
         $end = $currentTimestamp;
         // initialize API
         $poloniexApi = new poloniex(API_KEY, API_SECRET);
-        $chartData = $poloniexApi->get_chart_data($currencyPair, $start, $end, $this->periodSeconds);
+        $chartData = $poloniexApi->get_chart_data($this->name, $start, $end, $this->periodSeconds);
 
         /*
         echo "<pre>";
@@ -75,11 +70,13 @@ class Analyse
         if ($this->upperTrendBroken && $this->upperRowBroken) {
             $this->tradingReason = 'Obere Trendlinie durchbrochen';
             $this->tradingSignal = true;
+            $this->drawChart($this->getChartData(), time());
         }
 
         if ($this->lowerTrendBroken && $this->lowerRowBroken) {
             $this->tradingReason = 'Untere Trendlinie durchbrochen';
             $this->tradingSignal = true;
+            $this->drawChart($this->getChartData(), time());
         }
 
         /*
@@ -90,11 +87,11 @@ class Analyse
             $this->tradingSignal = true;
 
             // // send mail
-            // // $imageName = $this->drawChart($this->getChartData($currencyPair), $currencyPair, time());
+            // // $imageName = $this->drawChart($this->getChartData(), time());
             // // $mailtext = 'UpTrend durchbrochen';
-            // // $betreff    = $currencyPair. ", UpTrend durchbrochen";
+            // // $betreff    = $this->name. ", UpTrend durchbrochen";
             // // $sendMail = new Mail();
-            // // $sendMail->sendMail($mailtext, $betreff, $currencyPair, $imageName);
+            // // $sendMail->sendMail($mailtext, $betreff, $this->name, $imageName);
         }
 
         // check for broken lower trendline
@@ -104,11 +101,11 @@ class Analyse
             $this->tradingSignal = true;
 
             // send mail
-            // $imageName = $this->drawChart($this->getChartData($currencyPair), $currencyPair, time());
+            // $imageName = $this->drawChart($this->getChartData(), time());
             // $mailtext = 'DownTrend durchbrochen';
-            // $betreff    = $currencyPair. ", DownTrend durchbrochen";
+            // $betreff    = $this->name. ", DownTrend durchbrochen";
             // $sendMail = new Mail();
-            // $sendMail->sendMail($mailtext, $betreff, $currencyPair, $imageName);
+            // $sendMail->sendMail($mailtext, $betreff, $this->name, $imageName);
         }
         */
     }
@@ -364,16 +361,16 @@ class Analyse
     /**
      * Gets chart data
      */
-    private function getChartData($currencyPair)
+    private function getChartData()
     {
 
         $currentTimestamp = time();
-        $start = $currentTimestamp - (0.5 * 24 * 3600);
+        $start = $currentTimestamp - (1 * 24 * 3600);
         $end = $currentTimestamp;
 
         // initialize API
         $poloniexApi = new poloniex(API_KEY, API_SECRET);
-        $chartData = $poloniexApi->get_chart_data($currencyPair, $start, $end, $this->periodSeconds);
+        $chartData = $poloniexApi->get_chart_data($this->name, $start, $end, $this->periodSeconds);
 
         return $chartData;
     }
@@ -381,7 +378,7 @@ class Analyse
     /**
      * Draws chart to file
      */
-    private function drawChart($chartData, $currencyPair, $timestamp)
+    private function drawChart($chartData, $timestamp)
     {
 
         /* Create and populate the pData object */
@@ -437,9 +434,9 @@ class Analyse
         $mystockChart->drawStockChart($stockSettings);
 
         /* Render the picture (choose the best way) */
-        $myPicture->Render("../downloads/tmp/" . $currencyPair . "_" . $timestamp . ".png");
+        $myPicture->Render("../downloads/tmp/" . $this->name . "_" . $timestamp . ".png");
 
-        return $currencyPair . "_" . $timestamp . ".png";
+        return $this->name . "_" . $timestamp . ".png";
     }
 
     /**
