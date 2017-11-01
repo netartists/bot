@@ -22,7 +22,7 @@ class Analyse
 {
 
     private $numberOfPeriods = 7;
-    private $numberOfPeriodsTrend = 20;
+    private $numberOfPeriodsTrend = 16;
 
     public $name = '';
     public $provider = 'Poloniex';
@@ -46,8 +46,16 @@ class Analyse
         // general properties
         $this->name = $currencyPair;
 
+        // get chart data
+        $currentTimestamp = time();
+        $start = $currentTimestamp - ($this->numberOfPeriodsTrend * 300);
+        $end = $currentTimestamp;
+        // initialize API
+        $poloniexApi = new poloniex(API_KEY, API_SECRET);
+        $chartData = $poloniexApi->get_chart_data($currencyPair, $start, $end, 300);
+
         // check for broken upper trendline
-        if ($this->checkBrokenUpperTrendline($currencyPair)) {
+        if ($this->checkBrokenUpperTrendline($chartData)) {
 
 
             $this->tradingReason = 'Obere Trendlinie durchbrochen';
@@ -64,7 +72,7 @@ class Analyse
         }
 
         // check for broken lower trendline
-        if ($this->checkBrokenLowerTrendline($currencyPair)) {
+        if ($this->checkBrokenLowerTrendline($chartData)) {
 
             $this->tradingReason = 'Untere Trendlinie durchbrochen';
             $this->tradingSignal = true;
@@ -89,27 +97,23 @@ class Analyse
      * Calculate trend value for last candle
      * Compare calculated trend value with value of last candle
      *
-     * @param currency pair
+     * @param chartData
      * @return boolean
      */
-    public function checkBrokenUpperTrendline($currencyPair)
+    public function checkBrokenUpperTrendline($chartData)
     {
-
-        $currentTimestamp = time();
-
-        $start = $currentTimestamp - ($this->numberOfPeriodsTrend * 300);
-        $end = $currentTimestamp;
-
-        // initialize API
-        $poloniexApi = new poloniex(API_KEY, API_SECRET);
-        $chartData = $poloniexApi->get_chart_data($currencyPair, $start, $end, 300);
-
         if (array_key_exists('candleStick', $chartData)) {
+
+            $countCandlesticks = count($chartData['candleStick']);
+            if ($countCandlesticks % 2 != 0) {
+                $countCandlesticks = $countCandlesticks - 1;
+            }
 
             // get highest closing value in $chartData part one
             $highestValuePartOne = 0;
             $highestDatePartOne = '';
-            for ($i = 0; $i < $this->numberOfPeriodsTrend / 2; $i++) {
+
+            for ($i = 0; $i < ($countCandlesticks / 2)+1; $i++) {
                 if ($chartData['candleStick'][$i]['high'] > $highestValuePartOne) {
                     $highestValuePartOne = $chartData['candleStick'][$i]['high'];
                     $highestDatePartOne = $chartData['candleStick'][$i]['date'];
@@ -119,7 +123,8 @@ class Analyse
             // get highest closing value in $chartData part two
             $highestValuePartTwo = 0;
             $highestDatePartTwo = '';
-            for ($i = $this->numberOfPeriodsTrend / 2; $i < $this->numberOfPeriodsTrend - 1; $i++) {
+
+            for ($i = ($countCandlesticks / 2)+1; $i <= $countCandlesticks - 2; $i++) {
                 if ($chartData['candleStick'][$i]['high'] > $highestValuePartTwo) {
                     $highestValuePartTwo = $chartData['candleStick'][$i]['high'];
                     $highestDatePartTwo = $chartData['candleStick'][$i]['date'];
@@ -127,20 +132,26 @@ class Analyse
             }
 
             // build linear equation
-            $equationParameters = $this->findLinearEquation($highestValuePartOne, $highestValuePartTwo, $highestDatePartOne, $highestDatePartTwo);
+            $equationParameters = $this->findLinearEquation('high', $highestValuePartOne, $highestValuePartTwo, $highestDatePartOne, $highestDatePartTwo);
 
-            // check if last candle brokes the trend
+            // check if second last candle broke the trend
             // y = m * x + b
-            // y is date
-            // x is high
-            // calculate tend x
-            // x = (y - b) / m
+            // x is date
+            // calculate trend y
+            $secondLastHigh = false;
+            $secondLastCandle = $chartData['candleStick'][count($chartData['candleStick'])-2];
+            $calculatedTrendValueSecondLastCandle = ($equationParameters['m'] * $secondLastCandle['date']) + $equationParameters['b'];
+            if ($secondLastCandle['high'] > $calculatedTrendValueSecondLastCandle) {
+                $secondLastHigh = true;
+            }
 
-            $lastCandle = end($chartData['candleStick']);
-
-            $calculatedTrendValue = ($lastCandle['date'] - $equationParameters['b']) / $equationParameters['m'];
-
-            if ($lastCandle['high'] >= $calculatedTrendValue) {
+            // check if last candle broke the trend
+            // y = m * x + b
+            // x is date
+            // calculate trend y
+            $lastCandle = $chartData['candleStick'][count($chartData['candleStick'])-1];
+            $calculatedTrendValueLastCandle = ($equationParameters['m'] * $lastCandle['date']) + $equationParameters['b'];
+            if ($lastCandle['high'] > $calculatedTrendValueLastCandle && $secondLastHigh == true) {
                 $this->buyPrice = $lastCandle['close'];
                 return true;
             }
@@ -159,27 +170,23 @@ class Analyse
      * Calculate trend value for last candle
      * Compare calculated trend value with value of last candle
      *
-     * @param currency pair
+     * @param chartData
      * @return boolean
      */
-    public function checkBrokenLowerTrendline($currencyPair)
+    public function checkBrokenLowerTrendline($chartData)
     {
-
-        $currentTimestamp = time();
-
-        $start = $currentTimestamp - ($this->numberOfPeriodsTrend * 300);
-        $end = $currentTimestamp;
-
-        // initialize API
-        $poloniexApi = new poloniex(API_KEY, API_SECRET);
-        $chartData = $poloniexApi->get_chart_data($currencyPair, $start, $end, 300);
-
         if (array_key_exists('candleStick', $chartData)) {
+
+            $countCandlesticks = count($chartData['candleStick']);
+            if ($countCandlesticks % 2 != 0) {
+                $countCandlesticks = $countCandlesticks - 1;
+            }
 
             // get lowest closing value in $chartData part one
             $lowestValuePartOne = 999999999999;
             $lowestDatePartOne = '';
-            for ($i = 0; $i < $this->numberOfPeriodsTrend / 2; $i++) {
+
+            for ($i = 0; $i < ($countCandlesticks / 2)+1; $i++) {
                 if ($chartData['candleStick'][$i]['low'] < $lowestValuePartOne) {
                     $lowestValuePartOne = $chartData['candleStick'][$i]['low'];
                     $lowestDatePartOne = $chartData['candleStick'][$i]['date'];
@@ -189,7 +196,8 @@ class Analyse
             // get lowest closing value in $chartData part two
             $lowestValuePartTwo = 999999999999;
             $lowestDatePartTwo = '';
-            for ($i = $this->numberOfPeriodsTrend / 2; $i < $this->numberOfPeriodsTrend - 1; $i++) {
+
+            for ($i = ($countCandlesticks / 2)+1; $i <= $countCandlesticks - 2; $i++) {
                 if ($chartData['candleStick'][$i]['low'] < $lowestValuePartTwo) {
                     $lowestValuePartTwo = $chartData['candleStick'][$i]['low'];
                     $lowestDatePartTwo = $chartData['candleStick'][$i]['date'];
@@ -197,20 +205,27 @@ class Analyse
             }
 
             // build linear equation
-            $equationParameters = $this->findLinearEquation($lowestValuePartOne, $lowestValuePartTwo, $lowestDatePartOne, $lowestDatePartTwo);
+            $equationParameters = $this->findLinearEquation('low', $lowestValuePartOne, $lowestValuePartTwo, $lowestDatePartOne, $lowestDatePartTwo);
 
-            // check if last candle brokes the trend
+            // check if second last candle broke the trend
             // y = m * x + b
-            // y is date
-            // x is low
-            // calculate tend x
-            // x = (y - b) / m
+            // x is date
+            // calculate trend y
+            $secondLastLow = false;
+            $secondLastCandle = $chartData['candleStick'][count($chartData['candleStick'])-2];
+            $calculatedTrendValueSecondLastCandle = ($equationParameters['m'] * $secondLastCandle['date']) + $equationParameters['b'];
+            if ($secondLastCandle['low'] < $calculatedTrendValueSecondLastCandle) {
+                $secondLastLow = true;
+            }
 
-            $lastCandle = end($chartData['candleStick']);
+            // check if last candle broke the trend
+            // y = m * x + b
+            // x is date
+            // calculate trend y
+            $lastCandle = $chartData['candleStick'][count($chartData['candleStick'])-1];
+            $calculatedTrendValueLastCandle = ($equationParameters['m'] * $lastCandle['date']) + $equationParameters['b'];
 
-            $calculatedTrendValue = ($lastCandle['date'] - $equationParameters['b']) / $equationParameters['m'];
-
-            if ($lastCandle['low'] <= $calculatedTrendValue) {
+            if ($lastCandle['low'] < $calculatedTrendValueLastCandle && $secondLastLow == true) {
                 $this->buyPrice = $lastCandle['low'];
                 return true;
             }
@@ -476,7 +491,7 @@ class Analyse
     }
 
     /**
-     * Builds linear equation for part one
+     * Builds linear equation
      *
      * @param $valuePartOne
      * @param $valuePartTwo
@@ -485,16 +500,15 @@ class Analyse
      *
      * @return array
      */
-    public function findLinearEquation($valuePartOne, $valuePartTwo, $datePartOne, $datePartTwo)
+    public function findLinearEquation($call, $valuePartOne, $valuePartTwo, $datePartOne, $datePartTwo)
     {
-
         // y = m * x + b
 
         // m = (y2 - y1) / (x2 - x1)
-        $equationParameters['m'] = ($datePartTwo - $datePartOne) / ($valuePartTwo - $valuePartOne);
+        $equationParameters['m'] = ($valuePartTwo - $valuePartOne) / ($datePartTwo - $datePartOne);
 
         // b = y - m * x
-        $equationParameters['b'] = $datePartOne - ($equationParameters['m'] * $valuePartOne);
+        $equationParameters['b'] = $valuePartOne - ($equationParameters['m'] * $datePartOne);
 
         return $equationParameters;
     }

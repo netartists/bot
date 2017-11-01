@@ -31,9 +31,6 @@ foreach ($currencyPairs as $currencyPair) {
     // $trade->checkRowSignals($currencyPair);
 
     if ($trade->tradingSignal == true) {
-
-        echo $currencyPair . ": " . $trade->tradingReason;
-
         // store marked currency pairs
         $currentTrade = new Trades();
         $currentTrade->name = $trade->name;
