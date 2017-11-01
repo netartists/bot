@@ -141,7 +141,8 @@ class Analyse
             $secondLastHigh = false;
             $secondLastCandle = $chartData['candleStick'][count($chartData['candleStick'])-2];
             $calculatedTrendValueSecondLastCandle = ($equationParameters['m'] * $secondLastCandle['date']) + $equationParameters['b'];
-            if ($secondLastCandle['high'] > $calculatedTrendValueSecondLastCandle) {
+
+            if ($secondLastCandle['close'] > $calculatedTrendValueSecondLastCandle) {
                 $secondLastHigh = true;
             }
 
@@ -151,7 +152,8 @@ class Analyse
             // calculate trend y
             $lastCandle = $chartData['candleStick'][count($chartData['candleStick'])-1];
             $calculatedTrendValueLastCandle = ($equationParameters['m'] * $lastCandle['date']) + $equationParameters['b'];
-            if ($lastCandle['high'] > $calculatedTrendValueLastCandle && $secondLastHigh == true) {
+
+            if ($lastCandle['close'] > $calculatedTrendValueLastCandle && $secondLastHigh == true) {
                 $this->buyPrice = $lastCandle['close'];
                 return true;
             }
@@ -214,7 +216,8 @@ class Analyse
             $secondLastLow = false;
             $secondLastCandle = $chartData['candleStick'][count($chartData['candleStick'])-2];
             $calculatedTrendValueSecondLastCandle = ($equationParameters['m'] * $secondLastCandle['date']) + $equationParameters['b'];
-            if ($secondLastCandle['low'] < $calculatedTrendValueSecondLastCandle) {
+
+            if ($secondLastCandle['close'] < $calculatedTrendValueSecondLastCandle) {
                 $secondLastLow = true;
             }
 
@@ -225,7 +228,7 @@ class Analyse
             $lastCandle = $chartData['candleStick'][count($chartData['candleStick'])-1];
             $calculatedTrendValueLastCandle = ($equationParameters['m'] * $lastCandle['date']) + $equationParameters['b'];
 
-            if ($lastCandle['low'] < $calculatedTrendValueLastCandle && $secondLastLow == true) {
+            if ($lastCandle['close'] < $calculatedTrendValueLastCandle && $secondLastLow == true) {
                 $this->buyPrice = $lastCandle['low'];
                 return true;
             }
