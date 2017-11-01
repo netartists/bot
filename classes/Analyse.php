@@ -363,7 +363,6 @@ class Analyse
      */
     private function getChartData()
     {
-
         $currentTimestamp = time();
         $start = $currentTimestamp - (1 * 24 * 3600);
         $end = $currentTimestamp;
