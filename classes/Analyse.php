@@ -23,6 +23,7 @@ class Analyse
 
     private $numberOfPeriods = 7;
     private $numberOfPeriodsTrend = 16;
+    private $periodSeconds = 1800;
 
     public $name = '';
     public $provider = 'Poloniex';
@@ -34,6 +35,11 @@ class Analyse
     public $tradingReason = '';
     public $trailingStopDistance = '10';
     public $tradingSignal = false;
+
+    public $upperTrendBroken = false;
+    public $lowerTrendBroken = false;
+    public $upperRowBroken = false;
+    public $lowerRowBroken = false;
 
     /**
      * Checks currency pairs for trend signals
@@ -48,27 +54,47 @@ class Analyse
 
         // get chart data
         $currentTimestamp = time();
-        $start = $currentTimestamp - ($this->numberOfPeriodsTrend * 300);
+        $start = $currentTimestamp - ($this->numberOfPeriodsTrend * $this->periodSeconds);
         $end = $currentTimestamp;
         // initialize API
         $poloniexApi = new poloniex(API_KEY, API_SECRET);
-        $chartData = $poloniexApi->get_chart_data($currencyPair, $start, $end, 300);
+        $chartData = $poloniexApi->get_chart_data($currencyPair, $start, $end, $this->periodSeconds);
 
+        /*
+        echo "<pre>";
+        echo print_r($chartData);
+        echo "<pre>";
+        */
+
+        $this->checkBrokenUprow($chartData);
+        $this->checkBrokenDownrow($chartData);
+
+        $this->checkBrokenUprow($chartData);
+        $this->checkBrokenDownrow($chartData);
+
+        if ($this->upperTrendBroken && $this->upperRowBroken) {
+            $this->tradingReason = 'Obere Trendlinie durchbrochen';
+            $this->tradingSignal = true;
+        }
+
+        if ($this->lowerTrendBroken && $this->lowerRowBroken) {
+            $this->tradingReason = 'Untere Trendlinie durchbrochen';
+            $this->tradingSignal = true;
+        }
+
+        /*
         // check for broken upper trendline
         if ($this->checkBrokenUpperTrendline($chartData)) {
-
 
             $this->tradingReason = 'Obere Trendlinie durchbrochen';
             $this->tradingSignal = true;
 
-            /*
-            // send mail
-            $imageName = $this->drawChart($this->getChartData($currencyPair), $currencyPair, time());
-            $mailtext = 'UpTrend durchbrochen';
-            $betreff    = $currencyPair. ", UpTrend durchbrochen";
-            $sendMail = new Mail();
-            $sendMail->sendMail($mailtext, $betreff, $currencyPair, $imageName);
-            */
+            // // send mail
+            // // $imageName = $this->drawChart($this->getChartData($currencyPair), $currencyPair, time());
+            // // $mailtext = 'UpTrend durchbrochen';
+            // // $betreff    = $currencyPair. ", UpTrend durchbrochen";
+            // // $sendMail = new Mail();
+            // // $sendMail->sendMail($mailtext, $betreff, $currencyPair, $imageName);
         }
 
         // check for broken lower trendline
@@ -77,15 +103,14 @@ class Analyse
             $this->tradingReason = 'Untere Trendlinie durchbrochen';
             $this->tradingSignal = true;
 
-            /*
             // send mail
-            $imageName = $this->drawChart($this->getChartData($currencyPair), $currencyPair, time());
-            $mailtext = 'DownTrend durchbrochen';
-            $betreff    = $currencyPair. ", DownTrend durchbrochen";
-            $sendMail = new Mail();
-            $sendMail->sendMail($mailtext, $betreff, $currencyPair, $imageName);
-            */
+            // $imageName = $this->drawChart($this->getChartData($currencyPair), $currencyPair, time());
+            // $mailtext = 'DownTrend durchbrochen';
+            // $betreff    = $currencyPair. ", DownTrend durchbrochen";
+            // $sendMail = new Mail();
+            // $sendMail->sendMail($mailtext, $betreff, $currencyPair, $imageName);
         }
+        */
     }
 
     /**
@@ -154,7 +179,7 @@ class Analyse
             $calculatedTrendValueLastCandle = ($equationParameters['m'] * $lastCandle['date']) + $equationParameters['b'];
 
             if ($lastCandle['close'] > $calculatedTrendValueLastCandle && $secondLastHigh == true) {
-                $this->buyPrice = $lastCandle['close'];
+                $this->upperTrendBroken = true;
                 return true;
             }
         }
@@ -229,7 +254,7 @@ class Analyse
             $calculatedTrendValueLastCandle = ($equationParameters['m'] * $lastCandle['date']) + $equationParameters['b'];
 
             if ($lastCandle['close'] < $calculatedTrendValueLastCandle && $secondLastLow == true) {
-                $this->buyPrice = $lastCandle['low'];
+                $this->lowerTrendBroken = true;
                 return true;
             }
         }
@@ -238,84 +263,24 @@ class Analyse
     }
 
     /**
-     * Checks currency pairs for row signals
-     *
-     * $currencyPairs array Array of currency pairs
-     */
-    public function checkRowSignals($currencyPair)
-    {
-
-        // general properties
-        $this->name = $currencyPair;
-
-        // check for broken uptrend
-        if ($this->checkBrokenUprow($currencyPair)) {
-
-
-            $this->tradingReason = 'UpRow durchbrochen';
-            $this->tradingSignal = true;
-
-            /*
-            // send mail
-            $imageName = $this->drawChart($this->getChartData($currencyPair), $currencyPair, time());
-            $mailtext = 'UpRow durchbrochen';
-            $betreff    = $currencyPair. ", UpRow durchbrochen";
-            $sendMail = new Mail();
-            $sendMail->sendMail($mailtext, $betreff, $currencyPair, $imageName);
-            */
-        }
-
-        // check for broken downrow
-        if ($this->checkBrokenDownrow($currencyPair)) {
-
-            $this->tradingReason = 'DownRow durchbrochen';
-            $this->tradingSignal = true;
-
-            /*
-            // send mail
-            $imageName = $this->drawChart($this->getChartData($currencyPair), $currencyPair, time());
-            $mailtext = 'DownRow durchbrochen';
-            $betreff    = $currencyPair. ", DownRow durchbrochen";
-            $sendMail = new Mail();
-            $sendMail->sendMail($mailtext, $betreff, $currencyPair, $imageName);
-            */
-        }
-    }
-
-    /**
      * Checks whether the upward row has been broken down trough
      *
      * x higher periods followed by y lower periods
      *
      * 5 minutes periods
-     *
-     * ToDo: get all data before iterate
      */
-    public function checkBrokenUprow($currencyPair)
+    public function checkBrokenUprow($chartData)
     {
-
-        $currentTimestamp = time();
         $amountOfFollowingHigherPeriods = 5;
         $amountOfFollowingLowerPeriods = 2;
+
         $amountOfHigherPeriodsInARow = 0;
         $amountOfLowerPeriodsInARow = 0;
         $highTrend = false;
 
         for ($i = $this->numberOfPeriods; $i >= 1; $i--) {
 
-            $start = $currentTimestamp - ($i * 300);
-            $end = $currentTimestamp - (($i - 1) * 300);
-
-            // better sleep, because API allows not so much requests (max. 6 per second)
-            time_nanosleep(0, 200000000);
-
-            // initialize API
-            $poloniexApi = new poloniex(API_KEY, API_SECRET);
-            $chartData = $poloniexApi->get_chart_data($currencyPair, $start, $end, 300);
-
-            if (array_key_exists("candleStick", $chartData)
-                && $chartData["candleStick"][0]["close"] > 0
-                && $chartData["candleStick"][0]["open"] > 0) {
+            if (array_key_exists("candleStick", $chartData)) {
 
                 if (($chartData["candleStick"][0]["close"] - $chartData["candleStick"][0]["open"]) > 0) {
                     // "higher";
@@ -336,7 +301,7 @@ class Analyse
                         if ($amountOfLowerPeriodsInARow >= $amountOfFollowingLowerPeriods) {
 
                             // broken uprow detected
-                            $this->buyPrice = $chartData["candleStick"][0]["close"];
+                            $this->upperRowBroken = true;
                             return true;
                         }
                     }
@@ -353,13 +318,9 @@ class Analyse
      * x lower periods followed by y higher periods
      *
      * 5 minutes periods
-     *
-     * ToDo: get all data before iterate
      */
-    public function checkBrokenDownrow($currencyPair)
+    public function checkBrokenDownrow($chartData)
     {
-
-        $currentTimestamp = time();
         $amountOfFollowingLowerPeriods = 5;
         $amountOfFollowingHigherPeriods = 2;
         $amountOfLowerPeriodsInARow = 0;
@@ -368,19 +329,7 @@ class Analyse
 
         for ($i = $this->numberOfPeriods; $i >= 1; $i--) {
 
-            $start = $currentTimestamp - ($i * 300);
-            $end = $currentTimestamp - (($i - 1) * 300);
-
-            // better sleep, because API allows not so much requests (max. 6 per second)
-            time_nanosleep(0, 200000000);
-
-            // initialize API
-            $poloniexApi = new poloniex(API_KEY, API_SECRET);
-            $chartData = $poloniexApi->get_chart_data($currencyPair, $start, $end, 300);
-
-            if (array_key_exists("candleStick", $chartData)
-                && $chartData["candleStick"][0]["close"] > 0
-                && $chartData["candleStick"][0]["open"] > 0) {
+            if (array_key_exists("candleStick", $chartData)) {
 
                 if (($chartData["candleStick"][0]["close"] - $chartData["candleStick"][0]["open"]) < 0) {
                     // "lower";
@@ -401,7 +350,7 @@ class Analyse
                         if ($amountOfHigherPeriodsInARow >= $amountOfFollowingHigherPeriods) {
 
                             // broken downrow detected
-                            $this->buyPrice = $chartData["candleStick"][0]["close"];
+                            $this->lowerRowBroken = true;
                             return true;
                         }
                     }
@@ -424,7 +373,7 @@ class Analyse
 
         // initialize API
         $poloniexApi = new poloniex(API_KEY, API_SECRET);
-        $chartData = $poloniexApi->get_chart_data($currencyPair, $start, $end, 300);
+        $chartData = $poloniexApi->get_chart_data($currencyPair, $start, $end, $this->periodSeconds);
 
         return $chartData;
     }
