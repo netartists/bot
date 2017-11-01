@@ -157,7 +157,7 @@ class Analyse
             }
 
             // build linear equation
-            $equationParameters = $this->findLinearEquation('high', $highestValuePartOne, $highestValuePartTwo, $highestDatePartOne, $highestDatePartTwo);
+            $equationParameters = $this->findLinearEquation($highestValuePartOne, $highestValuePartTwo, $highestDatePartOne, $highestDatePartTwo);
 
             // check if second last candle broke the trend
             // y = m * x + b
@@ -232,7 +232,7 @@ class Analyse
             }
 
             // build linear equation
-            $equationParameters = $this->findLinearEquation('low', $lowestValuePartOne, $lowestValuePartTwo, $lowestDatePartOne, $lowestDatePartTwo);
+            $equationParameters = $this->findLinearEquation($lowestValuePartOne, $lowestValuePartTwo, $lowestDatePartOne, $lowestDatePartTwo);
 
             // check if second last candle broke the trend
             // y = m * x + b
@@ -452,7 +452,7 @@ class Analyse
      *
      * @return array
      */
-    public function findLinearEquation($call, $valuePartOne, $valuePartTwo, $datePartOne, $datePartTwo)
+    public function findLinearEquation($valuePartOne, $valuePartTwo, $datePartOne, $datePartTwo)
     {
         // y = m * x + b
 
