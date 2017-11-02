@@ -20,11 +20,21 @@ include("lib/pChart2.1.4/class/pStock.class.php");
 
 class Analyse
 {
+    // chart data settings
+    private $periodSeconds = 300;
 
-    private $numberOfPeriods = 7;
-    private $numberOfPeriodsTrend = 16;
-    private $periodSeconds = 1800;
+    // broken row check settings
+    private $numberOfPeriodsRow = 7;
+    private $checkBrokenUprowAmountOfFollowingHigherPeriods = 5;
+    private $checkBrokenUprowAmountOfFollowingLowerPeriods = 2;
 
+    private $checkBrokenDownrowAmountOfFollowingLowerPeriods = 5;
+    private $checkBrokenDownrowAmountOfFollowingHigherPeriods = 2;
+
+    // broken trend check settings
+    private $numberOfPeriodsTrend = 10;
+
+    // public vars
     public $name = '';
     public $provider = 'Poloniex';
     public $buyDate = '';
@@ -55,11 +65,11 @@ class Analyse
         $poloniexApi = new poloniex(API_KEY, API_SECRET);
         $chartData = $poloniexApi->get_chart_data($this->name, $start, $end, $this->periodSeconds);
 
-        /*
-        echo "<pre>";
-        echo print_r($chartData);
-        echo "<pre>";
-        */
+        if (1 == 1) {
+            echo "<pre>";
+            echo print_r($chartData);
+            echo "<pre>";
+        }
 
         $this->checkBrokenUprow($chartData);
         $this->checkBrokenDownrow($chartData);
@@ -77,6 +87,42 @@ class Analyse
             $this->tradingReason = 'Untere Trendlinie durchbrochen';
             $this->tradingSignal = true;
             $this->drawChart($this->getChartData(), time());
+        }
+
+        $this->drawChartCanvas($chartData);
+
+
+
+        if ($this->upperTrendBroken) {
+            echo "upperTrendBroken";
+            echo "<br>";
+        } else {
+            echo "NOT upperTrendBroken";
+            echo "<br>";
+        }
+
+        if ($this->upperRowBroken) {
+            echo "upperRowBroken";
+            echo "<br>";
+        } else {
+            echo "NOT upperRowBroken";
+            echo "<br>";
+        }
+
+        if ($this->lowerTrendBroken) {
+            echo "lowerTrendBroken";
+            echo "<br>";
+        } else {
+            echo "NOT lowerTrendBroken";
+            echo "<br>";
+        }
+
+        if ($this->lowerRowBroken) {
+            echo "lowerRowBroken";
+            echo "<br>";
+        } else {
+            echo "NOT lowerRowBroken";
+            echo "<hr>";
         }
 
         /*
@@ -176,6 +222,7 @@ class Analyse
             $calculatedTrendValueLastCandle = ($equationParameters['m'] * $lastCandle['date']) + $equationParameters['b'];
 
             if ($lastCandle['close'] > $calculatedTrendValueLastCandle && $secondLastHigh == true) {
+                echo 111111;
                 $this->upperTrendBroken = true;
                 return true;
             }
@@ -268,14 +315,11 @@ class Analyse
      */
     public function checkBrokenUprow($chartData)
     {
-        $amountOfFollowingHigherPeriods = 5;
-        $amountOfFollowingLowerPeriods = 2;
-
         $amountOfHigherPeriodsInARow = 0;
         $amountOfLowerPeriodsInARow = 0;
         $highTrend = false;
 
-        for ($i = $this->numberOfPeriods; $i >= 1; $i--) {
+        for ($i = $this->numberOfPeriodsRow; $i >= 1; $i--) {
 
             if (array_key_exists("candleStick", $chartData)) {
 
@@ -284,7 +328,7 @@ class Analyse
                     $amountOfHigherPeriodsInARow++;
                     $amountOfLowerPeriodsInARow = 0;
 
-                    if ($amountOfHigherPeriodsInARow >= $amountOfFollowingHigherPeriods) {
+                    if ($amountOfHigherPeriodsInARow >= $this->checkBrokenUprowAmountOfFollowingHigherPeriods) {
                         $highTrend = true;
                     }
                 } else {
@@ -295,9 +339,10 @@ class Analyse
                         $amountOfHigherPeriodsInARow = 0;
                     } else {
 
-                        if ($amountOfLowerPeriodsInARow >= $amountOfFollowingLowerPeriods) {
+                        if ($amountOfLowerPeriodsInARow >= $this->checkBrokenUprowAmountOfFollowingLowerPeriods) {
 
                             // broken uprow detected
+                            echo 222222;
                             $this->upperRowBroken = true;
                             return true;
                         }
@@ -318,13 +363,11 @@ class Analyse
      */
     public function checkBrokenDownrow($chartData)
     {
-        $amountOfFollowingLowerPeriods = 5;
-        $amountOfFollowingHigherPeriods = 2;
         $amountOfLowerPeriodsInARow = 0;
         $amountOfHigherPeriodsInARow = 0;
         $lowTrend = false;
 
-        for ($i = $this->numberOfPeriods; $i >= 1; $i--) {
+        for ($i = $this->numberOfPeriodsRow; $i >= 1; $i--) {
 
             if (array_key_exists("candleStick", $chartData)) {
 
@@ -333,7 +376,7 @@ class Analyse
                     $amountOfLowerPeriodsInARow++;
                     $amountOfHigherPeriodsInARow = 0;
 
-                    if ($amountOfLowerPeriodsInARow >= $amountOfFollowingLowerPeriods) {
+                    if ($amountOfLowerPeriodsInARow >= $this->checkBrokenDownrowAmountOfFollowingLowerPeriods) {
                         $lowTrend = true;
                     }
                 } else {
@@ -344,7 +387,7 @@ class Analyse
                         $amountOfLowerPeriodsInARow = 0;
                     } else {
 
-                        if ($amountOfHigherPeriodsInARow >= $amountOfFollowingHigherPeriods) {
+                        if ($amountOfHigherPeriodsInARow >= $this->checkBrokenDownrowAmountOfFollowingHigherPeriods) {
 
                             // broken downrow detected
                             $this->lowerRowBroken = true;
@@ -438,6 +481,56 @@ class Analyse
         return $this->name . "_" . $timestamp . ".png";
     }
 
+    /**
+     * Draws chart to canvas
+     */
+    private function drawChartCanvas($chartData)
+    {
+        // get highest closing value in $chartData
+        $highestValue = 0;
+
+        for ($i = 0; $i < count($chartData['candleStick']); $i++) {
+            if ($chartData['candleStick'][$i]['high'] > $highestValue) {
+                $highestValue = $chartData['candleStick'][$i]['high'];
+                $highestValueDifference = $chartData['candleStick'][$i]['high'] - $chartData['candleStick'][$i]['low'];
+            }
+        }
+
+        echo "<script type='application/javascript'>";
+            echo "function draw() {";
+                echo "var canvas = document.getElementById('canvas');";
+                echo "if(canvas.getContext){";
+                    echo "var ctx = canvas.getContext('2d');";
+                    // echo "ctx.translate(0, canvas.height);";
+                    // echo "ctx.scale(1, -1);";
+
+                    for ($i = 0; $i < count($chartData['candleStick']); $i++) {
+
+                        if ($chartData['candleStick'][$i]['close'] - $chartData['candleStick'][$i]['open'] > 0) {
+                            $candleColor = "rgb(0,255,0)";
+                        } else {
+                            $candleColor = "rgb(200,0,0)";
+                        }
+
+                        $candleWidth = 10;
+                        $xCoord = $i * 15;
+
+                        $yCoord = 100 / $highestValue * $chartData['candleStick'][$i]['high'];
+                        $yCoord = ($yCoord - 99) * 100;
+
+                        $candleHeight = $chartData['candleStick'][$i]['high'] - $chartData['candleStick'][$i]['low'];
+                        $candleHeight = 100 / $highestValueDifference * $candleHeight;
+
+                        echo "
+                        alert(".$yCoord.");
+                        ctx.fillStyle = '".$candleColor."';
+                        ctx.fillRect(".$xCoord.", ".$yCoord.", ".$candleWidth.", ".$candleHeight.");";
+                    }
+                echo "}}
+            </script>";
+
+    }
+    
     /**
      * Builds linear equation
      *
