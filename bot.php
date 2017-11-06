@@ -22,7 +22,9 @@ echo "<h1>TrendChecker</h1>";
 
 // define currency pairs
 $currencyPairs = array("BTC_XMR", "BTC_GAME", "BTC_ETC", "BTC_ETH", "BTC_LTC");
-$currencyPairs = array("BTC_ETC");
+// $currencyPairs = array("BTC_ETC");
+
+echo "<canvas style='border: 1px solid grey;' id='canvas' width='500' height='300'></canvas>";
 
 // check every single currency pair for trading signals
 foreach ($currencyPairs as $currencyPair) {
@@ -50,19 +52,7 @@ foreach ($currencyPairs as $currencyPair) {
     }
 }
 
-echo "<canvas style='border: 1px solid grey;' id='canvas' width='500' height='1000'></canvas>";
+
 
 echo "</body></html>";
-
-
-
-
-
-
-
-
-
-
-
-
 

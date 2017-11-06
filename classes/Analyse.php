@@ -32,7 +32,7 @@ class Analyse
     private $checkBrokenDownrowAmountOfFollowingHigherPeriods = 2;
 
     // broken trend check settings
-    private $numberOfPeriodsTrend = 10;
+    private $numberOfPeriodsTrend = 30;
 
     // public vars
     public $name = '';
@@ -51,6 +51,10 @@ class Analyse
     public $upperRowBroken = false;
     public $lowerRowBroken = false;
 
+    // trend lines
+    private $upperTrendline = array();
+    private $lowerTrendline = array();
+
     /**
      * Checks currency pairs for trend signals
      *
@@ -65,25 +69,21 @@ class Analyse
         $poloniexApi = new poloniex(API_KEY, API_SECRET);
         $chartData = $poloniexApi->get_chart_data($this->name, $start, $end, $this->periodSeconds);
 
-        if (1 == 1) {
-            echo "<pre>";
-            echo print_r($chartData);
-            echo "<pre>";
-        }
+        $this->checkBrokenUpperTrendline($chartData);
+        $this->checkBrokenLowerTrendline($chartData);
 
         $this->checkBrokenUprow($chartData);
         $this->checkBrokenDownrow($chartData);
 
-        $this->checkBrokenUprow($chartData);
-        $this->checkBrokenDownrow($chartData);
-
-        if ($this->upperTrendBroken && $this->upperRowBroken) {
+        // if ($this->upperTrendBroken && $this->upperRowBroken) {
+        if ($this->upperTrendBroken) {
             $this->tradingReason = 'Obere Trendlinie durchbrochen';
             $this->tradingSignal = true;
             $this->drawChart($this->getChartData(), time());
         }
 
-        if ($this->lowerTrendBroken && $this->lowerRowBroken) {
+        // if ($this->lowerTrendBroken && $this->lowerRowBroken) {
+        if ($this->lowerTrendBroken) {
             $this->tradingReason = 'Untere Trendlinie durchbrochen';
             $this->tradingSignal = true;
             $this->drawChart($this->getChartData(), time());
@@ -91,7 +91,13 @@ class Analyse
 
         $this->drawChartCanvas($chartData);
 
+        if (1 == 2) {
+            echo "<pre>";
+            echo print_r($chartData);
+            echo "<pre>";
+        }
 
+        echo "<br>";
 
         if ($this->upperTrendBroken) {
             echo "upperTrendBroken";
@@ -202,6 +208,13 @@ class Analyse
             // build linear equation
             $equationParameters = $this->findLinearEquation($highestValuePartOne, $highestValuePartTwo, $highestDatePartOne, $highestDatePartTwo);
 
+            $this->upperTrendline = array(
+                                        'highestValuePartOne' => $highestValuePartOne,
+                                        'highestValuePartTwo' => $highestValuePartTwo,
+                                        'highestDatePartOne' => $highestDatePartOne,
+                                        'highestDatePartTwo' => $highestDatePartTwo
+            );
+
             // check if second last candle broke the trend
             // y = m * x + b
             // x is date
@@ -277,6 +290,13 @@ class Analyse
 
             // build linear equation
             $equationParameters = $this->findLinearEquation($lowestValuePartOne, $lowestValuePartTwo, $lowestDatePartOne, $lowestDatePartTwo);
+
+            $this->lowerTrendline = array(
+                'lowestValuePartOne' => $lowestValuePartOne,
+                'lowestValuePartTwo' => $lowestValuePartTwo,
+                'lowestDatePartOne' => $lowestDatePartOne,
+                'lowestDatePartTwo' => $lowestDatePartTwo
+            );
 
             // check if second last candle broke the trend
             // y = m * x + b
@@ -422,7 +442,6 @@ class Analyse
      */
     private function drawChart($chartData, $timestamp)
     {
-
         /* Create and populate the pData object */
 
         $dateArray = array();
@@ -486,51 +505,122 @@ class Analyse
      */
     private function drawChartCanvas($chartData)
     {
-        // get highest closing value in $chartData
-        $highestValue = 0;
-
+        $highestCandle = 0;
+        $lowestCandle = 99999999;
         for ($i = 0; $i < count($chartData['candleStick']); $i++) {
-            if ($chartData['candleStick'][$i]['high'] > $highestValue) {
-                $highestValue = $chartData['candleStick'][$i]['high'];
-                $highestValueDifference = $chartData['candleStick'][$i]['high'] - $chartData['candleStick'][$i]['low'];
+
+            // get highest candle in $chartData
+            if ($chartData['candleStick'][$i]['high'] > $highestCandle) {
+                $highestCandle = $chartData['candleStick'][$i]['high'];
+            }
+
+            // get lowest candle in $chartData
+            if ($chartData['candleStick'][$i]['low'] < $lowestCandle) {
+                $lowestCandle = $chartData['candleStick'][$i]['low'];
             }
         }
+
+        $canvasPixel = 300;
+        $chartUnit = ($highestCandle - $lowestCandle) / $canvasPixel;
 
         echo "<script type='application/javascript'>";
             echo "function draw() {";
                 echo "var canvas = document.getElementById('canvas');";
                 echo "if(canvas.getContext){";
                     echo "var ctx = canvas.getContext('2d');";
-                    // echo "ctx.translate(0, canvas.height);";
-                    // echo "ctx.scale(1, -1);";
 
                     for ($i = 0; $i < count($chartData['candleStick']); $i++) {
 
-                        if ($chartData['candleStick'][$i]['close'] - $chartData['candleStick'][$i]['open'] > 0) {
+                        $xCoord = ($i + 1) * 15;
+
+                        // draw candle
+                        $candleWidth = 10;
+
+                        // increase or decrease ?
+                        if ($chartData['candleStick'][$i]['close'] - $chartData['candleStick'][$i]['open'] >= 0) {
+
+                            // increasing
                             $candleColor = "rgb(0,255,0)";
+
+                            $yCoordCandleClose = ($highestCandle - $chartData['candleStick'][$i]['close']) / $chartUnit;
+
+                            $candleHeight = ($chartData['candleStick'][$i]['close'] - $chartData['candleStick'][$i]['open']) / $chartUnit;
+
+                            echo "
+                            ctx.fillStyle = '".$candleColor."';
+                            ctx.fillRect(".$xCoord.", ".$yCoordCandleClose.", ".$candleWidth.", ".$candleHeight.");";
                         } else {
+
+                            // decreasing
                             $candleColor = "rgb(200,0,0)";
+
+                            $yCoordCandleClose = ($highestCandle - $chartData['candleStick'][$i]['open']) / $chartUnit;
+
+                            $candleHeight = ($chartData['candleStick'][$i]['open'] - $chartData['candleStick'][$i]['close']) / $chartUnit;
+
+                            echo "
+                            ctx.fillStyle = '".$candleColor."';
+                            ctx.fillRect(".$xCoord.", ".$yCoordCandleClose.", ".$candleWidth.", ".$candleHeight.");";
                         }
 
-                        $candleWidth = 10;
-                        $xCoord = $i * 15;
+                        // draw wick
+                        $wickWidth = 1;
+                        $wickColor = "rgb(0,0,0)";
+                        $xCoord = $xCoord + 5;
 
-                        $yCoord = 100 / $highestValue * $chartData['candleStick'][$i]['high'];
-                        $yCoord = ($yCoord - 99) * 100;
+                        // wick, starting y coord
+                        // (highest candle - candle high value) / chart unit
+                        $yCoordWickHigh = ($highestCandle - $chartData['candleStick'][$i]['high']) / $chartUnit;
 
-                        $candleHeight = $chartData['candleStick'][$i]['high'] - $chartData['candleStick'][$i]['low'];
-                        $candleHeight = 100 / $highestValueDifference * $candleHeight;
+                        // wick, height
+                        // (candle high value - candle low value) / chart unit
+                        $wickHeight = ($chartData['candleStick'][$i]['high'] - $chartData['candleStick'][$i]['low']) / $chartUnit;
 
                         echo "
-                        alert(".$yCoord.");
-                        ctx.fillStyle = '".$candleColor."';
-                        ctx.fillRect(".$xCoord.", ".$yCoord.", ".$candleWidth.", ".$candleHeight.");";
+                            ctx.fillStyle = '".$wickColor."';
+                            ctx.fillRect(".$xCoord.", ".$yCoordWickHigh.", ".$wickWidth.", ".$wickHeight.");";
+
+                        // draw upper trendline, first point
+                        if ($chartData['candleStick'][$i]['date'] == $this->upperTrendline['highestDatePartOne']) {
+                            $upperTrendLineStartX = $xCoord;
+                            $upperTrendLineStartY = ($highestCandle - $this->upperTrendline['highestValuePartOne']) / $chartUnit;
+                        }
+
+                        // draw upper trendline, second point
+                        if ($chartData['candleStick'][$i]['date'] == $this->upperTrendline['highestDatePartTwo']) {
+                            $upperTrendLineStopX = $xCoord;
+                            $upperTrendLineStopY = ($highestCandle - $this->upperTrendline['highestValuePartTwo']) / $chartUnit;
+                        }
+
+                        // draw lower trendline, first point
+                        if ($chartData['candleStick'][$i]['date'] == $this->lowerTrendline['lowestDatePartOne']) {
+                            $lowerTrendLineStartX = $xCoord;
+                            $lowerTrendLineStartY = ($highestCandle - $this->lowerTrendline['lowestValuePartOne']) / $chartUnit;
+                        }
+
+                        // draw lower trendline, second point
+                        if ($chartData['candleStick'][$i]['date'] == $this->lowerTrendline['lowestDatePartTwo']) {
+                            $lowerTrendLineStopX = $xCoord;
+                            $lowerTrendLineStopY = ($highestCandle - $this->lowerTrendline['lowestValuePartTwo']) / $chartUnit;
+                        }
                     }
+
+
+                echo "ctx.beginPath();";
+                echo "ctx.moveTo(".$upperTrendLineStartX.",".$upperTrendLineStartY.");";
+                echo "ctx.lineTo(".$upperTrendLineStopX.",".$upperTrendLineStopY.");";
+                echo "ctx.stroke();";
+
+                echo "ctx.beginPath();";
+                echo "ctx.moveTo(".$lowerTrendLineStartX.",".$lowerTrendLineStartY.");";
+                echo "ctx.lineTo(".$lowerTrendLineStopX.",".$lowerTrendLineStopY.");";
+                echo "ctx.stroke();";
+
                 echo "}}
             </script>";
 
     }
-    
+
     /**
      * Builds linear equation
      *
