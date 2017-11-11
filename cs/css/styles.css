@@ -1,0 +1,91 @@
+body {
+    font-family: Roboto;
+    color: #59595b;
+    background-color: #fff;
+}
+
+.bg-red {
+    background-color: red;
+}
+
+.bg-orange {
+    background-color: #ffa92b;
+}
+
+.bg-green {
+    background-color: green;
+}
+
+.bg-white {
+    background-color: white;
+}
+
+.bg-brown {
+    background-color: #9b6439;
+}
+
+.top-nav-wrap {
+    width: 100%;
+    border-bottom: solid 1px #ededed;
+}
+
+.top-nav {
+    margin: 0px auto;
+}
+
+.top-nav div {
+    height: 36px;
+    line-height: 36px;
+}
+
+.top-nav .search {
+    color: white;
+    background-color: #913b2c;
+}
+
+.top-nav .social {
+    text-align: right;
+}
+
+.main-header div {
+    height: 170px;
+}
+
+.main-header .header-title {
+    font-family: serif;
+    font-size: 30px;
+    color: #000;
+    text-align: center;
+    height: 65px;
+    padding-top: 20px;
+}
+
+.main-header .header-sub-title {
+    font-family: serif;
+    font-size: 20px;
+    color: #965f32;
+    text-align: center;
+}
+
+.banner {
+    height: 567px;
+    background-image: url("../img/banner.jpg");
+    z-index: 1;
+}
+
+.banner-sub {
+    background-color: red;
+    z-index: 100;
+}
+
+.content div {
+    height: 500px;
+}
+
+.footer div {
+    height: 360px;
+}
+
+.footer-bottom div {
+    height: 50px;
+}
